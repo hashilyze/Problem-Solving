@@ -20,7 +20,7 @@ int main(void) {
     BstNode* root = 0;
     for (int item : items) {
         if (root) {
-            insertNode(root, item);
+            root = insertNode(root, item).first;
         } else {
             root = new BstNode(item);
         }
@@ -52,7 +52,7 @@ int main(void) {
     }
 
     std::random_shuffle(items.begin(), items.end());
-    std::cout << "Sequence of deletion\n";
+    std::cout << "\nSequence of deletion\n";
     std::for_each(items.cbegin(), items.cend(),
                   [](int elem) { std::cout << elem << ", "; });
     std::cout << "\n\n";

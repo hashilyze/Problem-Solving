@@ -35,8 +35,8 @@ BstNode* successor(BstNode* tree);
 // Get previous node from given tree
 BstNode* predecessor(BstNode* tree);
 
-// Insert the key and then return changed root node
-BstNode* insertNode(BstNode* tree, int key);
+// Insert the key and then return changed root node and inserted node
+std::pair<BstNode*, BstNode*> insertNode(BstNode* tree, int key);
 // Delete the key and then return changed root node
 BstNode* deleteNode(BstNode* tree, int key);
 #endif

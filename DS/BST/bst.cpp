@@ -77,26 +77,27 @@ BstNode* predecessor(BstNode* tree) {
 // ===Insert/Delete===
 // ===================
 
-BstNode* insertNode(BstNode* tree, int key) {
+std::pair<BstNode*, BstNode*> insertNode(BstNode* tree, int key) {
     BstNode* cursor = tree;
+    BstNode* newNode = 0;
     while (cursor != nullptr && tree->key != key) {
         if (key < cursor->key) {
             if (cursor->left) {
                 cursor = cursor->left;
             } else {
-                cursor->left = new BstNode(key, cursor, 0, 0);
+                newNode = cursor->left = new BstNode(key, cursor, 0, 0);
                 break;
             }
         } else {
             if (cursor->right) {
                 cursor = cursor->right;
             } else {
-                cursor->right = new BstNode(key, cursor, 0, 0);
+                newNode = cursor->right = new BstNode(key, cursor, 0, 0);
                 break;
             }
         }
     }
-    return tree;
+    return std::pair<BstNode*, BstNode*>(tree, newNode);
 }
 
 BstNode* deleteNode(BstNode* tree, int key) {
