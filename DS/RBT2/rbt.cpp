@@ -44,9 +44,11 @@ public: // Constructor
     }
 public: // Interface
     Node* search(int k);
+    Node* min(Node* x);
+    Node* max(Node* x);
 
     void insert(Node* z);
-
+public: // getter
     Node* nil() { return m_nil; }
     Node* root() { return m_root; }
 private: // Support Functions
@@ -118,6 +120,21 @@ auto Rbt::search(int k) -> Node* {
         } else{
             x = x->right();
         }
+    }
+    return x;
+}
+
+auto Rbt::min(Node* x) -> Node* {
+    if(isNull(x)) return x;
+    while(!isNull(x->left())){
+        x = x->left();
+    }
+    return x;
+}
+auto Rbt::max(Node* x) -> Node* {
+    if(isNull(x)) return x;
+    while(!isNull(x->right())){
+        x = x->right();
     }
     return x;
 }
@@ -199,16 +216,23 @@ void Rbt::insertFixup(Node* z){
 
 int main(void){
     // Test Cases
+    const int TEST_MIN = 0;
+    const int TEST_MAX = 9;
+
     Rbt rbt;
-    for(int i = 0; i < 10; ++i){
+    assert(rbt.min(rbt.root()) == rbt.nil());
+    assert(rbt.max(rbt.root()) == rbt.nil());
+
+    for(int i = TEST_MIN; i <= TEST_MAX; ++i){
         rbt.insert(new Rbt::Node(i));
     }
     
-    for(int i = 0; i < 10; ++i){
+    for(int i = TEST_MIN; i <= TEST_MAX; ++i){
         assert(rbt.search(i) != rbt.nil());
     }
-    assert(rbt.search(-1) == rbt.nil());
-    assert(rbt.search(10) == rbt.nil());
-    
-}
+    assert(rbt.search(TEST_MIN - 1) == rbt.nil());
+    assert(rbt.search(TEST_MAX + 1) == rbt.nil());
 
+    assert(rbt.min(rbt.root())->key() == TEST_MIN);
+    assert(rbt.max(rbt.root())->key() == TEST_MAX);
+}
