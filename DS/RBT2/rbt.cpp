@@ -33,7 +33,7 @@ public: // Type definition
         Node* m_left;
         Node* m_right;
     };
-public: // Interface
+public: // Constructor
     Rbt() { 
         m_nil = new Node();
         m_root = m_nil;
@@ -41,8 +41,11 @@ public: // Interface
     ~Rbt() {
         delete m_nil;
     }
-
+public: // Interface
+    void insert(Node* z);
 private: // Support Functions
+    void insertFixup(Node* z);
+
     bool isNull(Node* x){ return x == m_nil; }
 
     void linkLeftChild(Node* parent, Node* child){
@@ -96,6 +99,35 @@ private: // Data
     Node* m_nil;
     Node* m_root;
 };
+
+void Rbt::insert(Node* z){
+    Node* y = this->m_nil;
+    Node* x = this->m_root;
+    while(!isNull(x)){ // Find insert position
+        y = x;
+        if(z->key() < x->key()){
+            x = x->left();
+        } else{
+            x = x->right();
+        }
+    }
+    z->parent(y);   // Insert Z
+    if(isNull(y)){
+        m_root = z;
+    } else if(z->key() < y->key()){
+        y->left(z);
+    } else{
+        y->right(z);
+    }
+    z->left(m_nil);
+    z->right(m_nil);
+    z->color(EColor::RED);
+    insertFixup(z); // Fixup color
+}
+
+void Rbt::insertFixup(Node* z){
+
+}
 
 
 int main(void){
