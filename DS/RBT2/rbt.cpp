@@ -1,3 +1,4 @@
+#include <cassert>
 #include <stdexcept>
 
 class Rbt {
@@ -42,7 +43,12 @@ public: // Constructor
         delete m_nil;
     }
 public: // Interface
+    Node* search(int k);
+
     void insert(Node* z);
+
+    Node* nil() { return m_nil; }
+    Node* root() { return m_root; }
 private: // Support Functions
     void insertFixup(Node* z);
 
@@ -95,10 +101,26 @@ private: // Support Functions
         }
         linkRightChild(y, x);            // Y.right = X
     }
-public: // Data
+private: // Data
     Node* m_nil;
     Node* m_root;
 };
+
+// ================
+// =====query======
+// ================
+
+auto Rbt::search(int k) -> Node* {
+    Node* x = m_root;
+    while(!isNull(x) && x->key() != k){
+        if(k < x->key()){
+            x = x->left();
+        } else{
+            x = x->right();
+        }
+    }
+    return x;
+}
 
 // ================
 // =====insert=====
@@ -176,6 +198,17 @@ void Rbt::insertFixup(Node* z){
 }
 
 int main(void){
+    // Test Cases
     Rbt rbt;
+    for(int i = 0; i < 10; ++i){
+        rbt.insert(new Rbt::Node(i));
+    }
+    
+    for(int i = 0; i < 10; ++i){
+        assert(rbt.search(i) != rbt.nil());
+    }
+    assert(rbt.search(-1) == rbt.nil());
+    assert(rbt.search(10) == rbt.nil());
+    
 }
 
