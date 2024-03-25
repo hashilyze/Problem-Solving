@@ -2,6 +2,7 @@
 #include <stdexcept>
 #include <functional>
 #include <iostream>
+#include <fstream>
 
 class Rbt {
 public: // Type definition
@@ -61,6 +62,7 @@ public: // getter
     Node* root() { return m_root; }
 private: // Support Functions
     void insertFixup(Node* z);
+    void eraseFixup(Node* z);
 
     bool isNull(Node* x){ return x == m_nil; }
 
@@ -311,17 +313,96 @@ void Rbt::erase(Node* z){
         y->color(z->color());
     }
     if(origin == EColor::BLACK){ // Fixup
-
+        eraseFixup(x);
     }
     delete z;
 }
 
+void Rbt::eraseFixup(Node* x){
+    while(x != m_root && x->color() == EColor::BLACK){
+        if(x == x->parent()->left()){
+            Node* w = x->parent()->right();
+            if(w->color() == EColor::RED){ // Case.1
+                w->color(EColor::BLACK);
+                x->parent()->color(EColor::RED);
+                leftRotate(x->parent());
+                w = x->parent()->right();
+            }
+            if(w->left()->color() == EColor::BLACK && w->right()->color() == EColor::BLACK){ // Case.2
+                w->color(EColor::RED);
+                x = x->parent();
+            } else {
+                if(w->right()->color() == EColor::BLACK){ // Case.3
+                    w->left()->color(EColor::BLACK);
+                    w->color(EColor::RED);
+                    rightRotate(w);
+                    w = x->parent()->right();
+                }
+                w->color(x->parent()->color()); // Case.4
+                x->parent()->color(EColor::BLACK);
+                w->right()->color(EColor::BLACK);
+                leftRotate(x->parent());
+                x = m_root;
+            }
+        } else{
+            Node* w = x->parent()->left();
+            if(w->color() == EColor::RED){ // Case.1
+                w->color(EColor::BLACK);
+                x->parent()->color(EColor::RED);
+                rightRotate(x->parent());
+                w = x->parent()->left();
+            }
+            if(w->right()->color() == EColor::BLACK && w->left()->color() == EColor::BLACK){ // Case.2
+                w->color(EColor::RED);
+                x = x->parent();
+            } else {
+                if(w->left()->color() == EColor::BLACK){ // Case.3
+                    w->right()->color(EColor::BLACK);
+                    w->color(EColor::RED);
+                    leftRotate(w);
+                    w = x->parent()->left();
+                }
+                w->color(x->parent()->color()); // Case.4
+                x->parent()->color(EColor::BLACK);
+                w->left()->color(EColor::BLACK);
+                rightRotate(x->parent());
+                x = m_root;
+            }
+        }
+    }
+    x->color(EColor::BLACK);
+}
+
 int main(void){
+    std::ifstream fin("rbt.inp");
+    std::ofstream fout("rbt.out");
+    Rbt rbt;
+
+    char c;
+    int i;
+    while(fin >> c >> i){
+        if(i < 0) return 0;
+        switch(c){
+        case 'i':{
+            rbt.insert(new Rbt::Node(i));
+        } break;
+        case 'd':{
+            rbt.erase(rbt.search(i));
+        } break;
+        case 'c':{
+            Rbt::Node* result = rbt.search(i);
+            fout << "color(" << result->key() << "): " 
+                << (result->color() ? "RED" : "BLACK") << "\n";
+        } break;
+        }
+    }
+    fin.close();
+    fout.close();
+    return 0;
     // Test Cases
     const int TEST_MIN = 0;
     const int TEST_MAX = 9;
 
-    Rbt rbt;
     // Empty Tree Query
     assert(rbt.search((TEST_MAX + TEST_MIN) / 2) == rbt.nil());
     assert(rbt.min(rbt.root()) == rbt.nil());
