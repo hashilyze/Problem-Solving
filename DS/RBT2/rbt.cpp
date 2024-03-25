@@ -1,5 +1,7 @@
 #include <cassert>
 #include <stdexcept>
+#include <functional>
+#include <iostream>
 
 class Rbt {
 public: // Type definition
@@ -48,8 +50,12 @@ public: // Interface
     Node* max(Node* x);
     Node* predecessor(Node* x);
     Node* successor(Node* x);
+    void preorder(Node* x, std::function<void(Node*)> action);
+    void inorder(Node* x, std::function<void(Node*)> action);
+    void postorder(Node* x, std::function<void(Node*)> action);
 
     void insert(Node* z);
+    void erase(Node* z);
 public: // getter
     Node* nil() { return m_nil; }
     Node* root() { return m_root; }
@@ -69,6 +75,16 @@ private: // Support Functions
         if(!isNull(child)){
             child->parent(parent);
         }
+    }
+    void replaceChild(Node* u, Node* v){
+        if(isNull(u->parent())){
+            m_root = v;
+        } else if(u == u->parent()->left()){
+            u->parent()->left(v);
+        } else{
+            u->parent()->right(v);
+        }
+        v->parent(v->parent());
     }
 
     void leftRotate(Node* x){
@@ -166,6 +182,25 @@ auto Rbt::successor(Node* x) -> Node* {
         return y;
     } 
     return min(x->right());
+}
+
+void Rbt::preorder(Node* x, std::function<void(Node*)> action){
+    if(isNull(x)) return;
+    action(x);
+    preorder(x->left(), action);
+    preorder(x->right(), action);
+}
+void Rbt::inorder(Node* x, std::function<void(Node*)> action){
+    if(isNull(x)) return;
+    inorder(x->left(), action);
+    action(x);
+    inorder(x->right(), action);
+}
+void Rbt::postorder(Node* x, std::function<void(Node*)> action){
+    if(isNull(x)) return;
+    postorder(x->left(), action);
+    postorder(x->right(), action);
+    action(x);
 }
 
 // ================
@@ -289,4 +324,11 @@ int main(void){
         assert(cursor->key() + 1 == next->key());
         cursor = next;
     }
+
+    rbt.preorder(rbt.root(), [](Rbt::Node* x) { std::cout << x->key() << "(" << (x->color() ? "R" : "B") << "), ";});
+    std::cout << '\n';
+    rbt.inorder(rbt.root(), [](Rbt::Node* x) { std::cout << x->key() << "(" << (x->color() ? "R" : "B") << "), ";});
+    std::cout << '\n';
+    rbt.postorder(rbt.root(), [](Rbt::Node* x) { std::cout << x->key() << "(" << (x->color() ? "R" : "B") << "), ";});
+    std::cout << '\n';
 }
