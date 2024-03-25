@@ -84,7 +84,7 @@ private: // Support Functions
         } else{
             u->parent()->right(v);
         }
-        v->parent(v->parent());
+        v->parent(u->parent());
     }
 
     void leftRotate(Node* x){
@@ -278,6 +278,44 @@ void Rbt::insertFixup(Node* z){
     m_root->color(EColor::BLACK);   // Root is always Black
 }
 
+// ================
+// =====erase======
+// ================
+
+void Rbt::erase(Node* z){
+    Node* y = z;    // Joined position
+    Node* x = 0;    // Joined node
+    EColor origin = y->color();
+
+    if(isNull(z->left())){          // Join right child
+        x = z->right();
+        replaceChild(y, x);
+    } else if(isNull(z->right())){  // Join left child
+        x = z->left();
+        replaceChild(y, x);
+    } else{ 
+        y = min(z->right()); // successor
+        origin = y->color();
+        x = y->right();
+
+        if(y->parent() == z){
+            x->parent(y);
+        } else{
+            replaceChild(y, y->right());
+            y->right(z->right());
+            y->right()->parent(y);
+        }
+        replaceChild(z, y);
+        y->left(z->left());
+        y->left()->parent(y);
+        y->color(z->color());
+    }
+    if(origin == EColor::BLACK){ // Fixup
+
+    }
+    delete z;
+}
+
 int main(void){
     // Test Cases
     const int TEST_MIN = 0;
@@ -324,11 +362,18 @@ int main(void){
         assert(cursor->key() + 1 == next->key());
         cursor = next;
     }
-
+    std::cout << "[Traverse]\n";
+    std::cout << "Preorder\n";
     rbt.preorder(rbt.root(), [](Rbt::Node* x) { std::cout << x->key() << "(" << (x->color() ? "R" : "B") << "), ";});
-    std::cout << '\n';
+    std::cout << "\nInorder\n";
     rbt.inorder(rbt.root(), [](Rbt::Node* x) { std::cout << x->key() << "(" << (x->color() ? "R" : "B") << "), ";});
-    std::cout << '\n';
+    std::cout << "\nPostorder\n";
     rbt.postorder(rbt.root(), [](Rbt::Node* x) { std::cout << x->key() << "(" << (x->color() ? "R" : "B") << "), ";});
-    std::cout << '\n';
+    std::cout << "\n\n";
+
+    for(int i = TEST_MIN; i <= TEST_MAX; ++i){
+        rbt.erase(rbt.search(i));
+        rbt.inorder(rbt.root(), [](Rbt::Node* x) { std::cout << x->key() << "(" << (x->color() ? "R" : "B") << "), ";});
+        std::cout << '\n';
+    }
 }
