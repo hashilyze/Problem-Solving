@@ -46,6 +46,8 @@ public: // Interface
     Node* search(int k);
     Node* min(Node* x);
     Node* max(Node* x);
+    Node* predecessor(Node* x);
+    Node* successor(Node* x);
 
     void insert(Node* z);
 public: // getter
@@ -139,6 +141,33 @@ auto Rbt::max(Node* x) -> Node* {
     return x;
 }
 
+auto Rbt::predecessor(Node* x) -> Node* {
+    if(isNull(x)) return x;
+    
+    if(isNull(x->left())){
+        Node* y = x->parent();
+        while(!isNull(y) && x == y->left()){
+            x = y;
+            y = y->parent();
+        }
+        return y;
+    } 
+    return max(x->left());
+}
+auto Rbt::successor(Node* x) -> Node* {
+    if(isNull(x)) return x;
+    
+    if(isNull(x->right())){
+        Node* y = x->parent();
+        while(!isNull(y) && x == y->right()){
+            x = y;
+            y = y->parent();
+        }
+        return y;
+    } 
+    return min(x->right());
+}
+
 // ================
 // =====insert=====
 // ================
@@ -220,19 +249,44 @@ int main(void){
     const int TEST_MAX = 9;
 
     Rbt rbt;
+    // Empty Tree Query
+    assert(rbt.search((TEST_MAX + TEST_MIN) / 2) == rbt.nil());
     assert(rbt.min(rbt.root()) == rbt.nil());
     assert(rbt.max(rbt.root()) == rbt.nil());
+    assert(rbt.predecessor(rbt.root()) == rbt.nil());
+    assert(rbt.successor(rbt.root()) == rbt.nil());
 
+    // Insert
     for(int i = TEST_MIN; i <= TEST_MAX; ++i){
         rbt.insert(new Rbt::Node(i));
     }
-    
+    // Search
     for(int i = TEST_MIN; i <= TEST_MAX; ++i){
         assert(rbt.search(i) != rbt.nil());
     }
     assert(rbt.search(TEST_MIN - 1) == rbt.nil());
     assert(rbt.search(TEST_MAX + 1) == rbt.nil());
-
+    // Min/Max
     assert(rbt.min(rbt.root())->key() == TEST_MIN);
     assert(rbt.max(rbt.root())->key() == TEST_MAX);
+    // Predecessor/Successor
+    Rbt::Node* cursor = 0;
+    cursor = rbt.search(TEST_MAX);
+    while(true){
+        Rbt::Node* prev = rbt.predecessor(cursor);
+        if(prev == rbt.nil()) {
+            break;
+        }
+        assert(cursor->key() - 1 == prev->key());
+        cursor = prev;
+    }
+    cursor = rbt.search(TEST_MIN);
+    while(true){
+        Rbt::Node* next = rbt.successor(cursor);
+        if(next == rbt.nil()) {
+            break;
+        }
+        assert(cursor->key() + 1 == next->key());
+        cursor = next;
+    }
 }
