@@ -26,8 +26,8 @@ public: // Type definition
         Node* right() { return m_right; }
         void right(Node* right) { m_right = right; }
     private:
-        EColor m_color;
         int m_key;
+        EColor m_color;
 
         Node* m_parent;
         Node* m_left;
@@ -74,7 +74,7 @@ private: // Support Functions
         } else if(x->parent()->left() == x){
             x->parent()->left(y);
         } else{
-            x->parent()->right(x);
+            x->parent()->right(y);
         }
         linkLeftChild(y, x);            // Y.left = X
     }
@@ -91,14 +91,18 @@ private: // Support Functions
         } else if(x->parent()->left() == x){
             x->parent()->left(y);
         } else{
-            x->parent()->right(x);
+            x->parent()->right(y);
         }
         linkRightChild(y, x);            // Y.right = X
     }
-private: // Data
+public: // Data
     Node* m_nil;
     Node* m_root;
 };
+
+// ================
+// =====insert=====
+// ================
 
 void Rbt::insert(Node* z){
     Node* y = this->m_nil;
@@ -111,6 +115,7 @@ void Rbt::insert(Node* z){
             x = x->right();
         }
     }
+
     z->parent(y);   // Insert Z
     if(isNull(y)){
         m_root = z;
@@ -122,13 +127,53 @@ void Rbt::insert(Node* z){
     z->left(m_nil);
     z->right(m_nil);
     z->color(EColor::RED);
+    
     insertFixup(z); // Fixup color
 }
 
 void Rbt::insertFixup(Node* z){
+    while(z->parent()->color() == EColor::RED){
+        if(z->parent() == z->parent()->parent()->left()){ // Left Case
+            Node* y = z->parent()->parent()->right(); // uncle
 
+            if(y->color() == EColor::RED){      // Case.1: Propagation
+                y->color(EColor::BLACK);
+                z->parent()->color(EColor::BLACK);
+                z->parent()->parent()->color(EColor::RED);
+                z = z->parent()->parent();
+                continue;
+            }
+
+            if(z == z->parent()->right()){      // Case.2: Resolve Zig-Zag
+                z = z->parent();
+                leftRotate(z);
+            }
+            z->parent()->color(EColor::BLACK);  // Case.3
+            z->parent()->parent()->color(EColor::RED);
+            rightRotate(z->parent()->parent());
+        } else{ // Right Case
+            Node* y = z->parent()->parent()->left();
+
+            if(y->color() == EColor::RED){      // Case.1: Propagation
+                y->color(EColor::BLACK);
+                z->parent()->color(EColor::BLACK);
+                z->parent()->parent()->color(EColor::RED);
+                z = z->parent()->parent();
+                continue;
+            }
+
+            if(z == z->parent()->left()){       // Case.2: Resolve Zig-Zag
+                z = z->parent();
+                rightRotate(z);
+            }
+            z->parent()->color(EColor::BLACK);  // Case.3
+            z->parent()->parent()->color(EColor::RED);
+            leftRotate(z->parent()->parent());
+        }
+    }
+
+    m_root->color(EColor::BLACK);   // Root is always Black
 }
-
 
 int main(void){
     Rbt rbt;
