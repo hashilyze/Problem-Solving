@@ -78,15 +78,20 @@ private: // Support Functions
             child->parent(parent);
         }
     }
-    void replaceChild(Node* u, Node* v){
-        if(isNull(u->parent())){
+    /**
+     * replace u position into v subtree
+    */
+    void replaceSubTree(Node* u, Node* v){
+        // Combine u.p with v
+        if(isNull(u->parent())){ // u is root
             m_root = v;
-        } else if(u == u->parent()->left()){
+        } else if(u == u->parent()->left()){ // u is left subtree
             u->parent()->left(v);
-        } else{
+        } else{ // u is right subtree
             u->parent()->right(v);
         }
-        v->parent(u->parent());
+        // Combine v with u.p
+        v->parent(u->parent()); 
     }
 
     void leftRotate(Node* x){
@@ -285,34 +290,34 @@ void Rbt::insertFixup(Node* z){
 // ================
 
 void Rbt::erase(Node* z){
-    Node* y = z;    // Joined position
+    Node* y = z;    // Deleted position
     Node* x = 0;    // Joined node
     EColor origin = y->color();
 
     if(isNull(z->left())){          // Join right child
         x = z->right();
-        replaceChild(y, x);
+        replaceSubTree(y, x);
     } else if(isNull(z->right())){  // Join left child
         x = z->left();
-        replaceChild(y, x);
+        replaceSubTree(y, x);
     } else{ 
         y = min(z->right()); // successor
         origin = y->color();
         x = y->right();
 
-        if(y->parent() == z){
+        if(y->parent() == z){   // y is right child
             x->parent(y);
-        } else{
-            replaceChild(y, y->right());
+        } else{                 // y is left child
+            replaceSubTree(y, x);
             y->right(z->right());
             y->right()->parent(y);
         }
-        replaceChild(z, y);
+        replaceSubTree(z, y);
         y->left(z->left());
         y->left()->parent(y);
         y->color(z->color());
     }
-    if(origin == EColor::BLACK){ // Fixup
+    if(origin == EColor::BLACK){ // Fixup (Black node is deleted)
         eraseFixup(x);
     }
     delete z;
@@ -320,49 +325,51 @@ void Rbt::erase(Node* z){
 
 void Rbt::eraseFixup(Node* x){
     while(x != m_root && x->color() == EColor::BLACK){
-        if(x == x->parent()->left()){
-            Node* w = x->parent()->right();
-            if(w->color() == EColor::RED){ // Case.1
+        if(x == x->parent()->left()){ // Left Case
+            Node* w = x->parent()->right(); // uncle
+
+            if(w->color() == EColor::RED){ // Case.1: left-rotate
                 w->color(EColor::BLACK);
                 x->parent()->color(EColor::RED);
                 leftRotate(x->parent());
                 w = x->parent()->right();
             }
-            if(w->left()->color() == EColor::BLACK && w->right()->color() == EColor::BLACK){ // Case.2
+            if(w->left()->color() == EColor::BLACK && w->right()->color() == EColor::BLACK){ // Case.2: draw black child
                 w->color(EColor::RED);
                 x = x->parent();
             } else {
-                if(w->right()->color() == EColor::BLACK){ // Case.3
+                if(w->right()->color() == EColor::BLACK){ // Case.3: right-rotate
                     w->left()->color(EColor::BLACK);
                     w->color(EColor::RED);
                     rightRotate(w);
                     w = x->parent()->right();
                 }
-                w->color(x->parent()->color()); // Case.4
+                w->color(x->parent()->color()); // Case.4: left-rotate
                 x->parent()->color(EColor::BLACK);
                 w->right()->color(EColor::BLACK);
                 leftRotate(x->parent());
                 x = m_root;
             }
         } else{
-            Node* w = x->parent()->left();
-            if(w->color() == EColor::RED){ // Case.1
+            Node* w = x->parent()->left(); // uncle
+
+            if(w->color() == EColor::RED){ // Case.1: right-rotate
                 w->color(EColor::BLACK);
                 x->parent()->color(EColor::RED);
                 rightRotate(x->parent());
                 w = x->parent()->left();
             }
-            if(w->right()->color() == EColor::BLACK && w->left()->color() == EColor::BLACK){ // Case.2
+            if(w->right()->color() == EColor::BLACK && w->left()->color() == EColor::BLACK){ // Case.2: draw black child
                 w->color(EColor::RED);
                 x = x->parent();
             } else {
-                if(w->left()->color() == EColor::BLACK){ // Case.3
+                if(w->left()->color() == EColor::BLACK){ // Case.3: left-rotate
                     w->right()->color(EColor::BLACK);
                     w->color(EColor::RED);
                     leftRotate(w);
                     w = x->parent()->left();
                 }
-                w->color(x->parent()->color()); // Case.4
+                w->color(x->parent()->color()); // Case.4: right-rotate
                 x->parent()->color(EColor::BLACK);
                 w->left()->color(EColor::BLACK);
                 rightRotate(x->parent());
@@ -370,7 +377,7 @@ void Rbt::eraseFixup(Node* x){
             }
         }
     }
-    x->color(EColor::BLACK);
+    x->color(EColor::BLACK); // drop black (when root) or coloring black (when red node)
 }
 
 int main(void){
