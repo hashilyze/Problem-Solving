@@ -1,318 +1,467 @@
-#include "rbt.h"
+#include <cassert>
+#include <stdexcept>
+#include <functional>
+#include <iostream>
+#include <fstream>
 
-// ===================
-// =======Query=======
-// ===================
+class Rbt {
+public: // Type definition
+    enum EColor { BLACK = 0x00, RED = 0x01};
 
-void preorder(RbtNode* tree, const std::function<void(RbtNode*)>& action) {
-    if (tree == 0) return;
-    action(tree);
-    preorder(tree->left, action);
-    preorder(tree->right, action);
+    // Node for Red Black Tree
+    struct Node {
+    public: // Constructor
+        Node(int key = 0, EColor color = EColor::BLACK, Node* parent = 0, Node* left = 0, Node* right = 0)
+            : m_key(key), m_color(color), m_parent(parent), m_left(left), m_right(right)
+        { }
+    public: // getter/setter
+        EColor color() { return m_color; }
+        void color(EColor color) { m_color = color; }
+
+        int key() { return m_key; }
+        void key(int key) { m_key = key; }
+
+        Node* parent() { return m_parent; }
+        void parent(Node* parent) { m_parent = parent; }
+
+        Node* left() { return m_left; }
+        void left(Node* left) { m_left = left; }
+
+        Node* right() { return m_right; }
+        void right(Node* right) { m_right = right; }
+    private:
+        int m_key;
+        EColor m_color;
+
+        Node* m_parent;
+        Node* m_left;
+        Node* m_right;
+    };
+public: // Constructor
+    Rbt() { 
+        m_nil = new Node();
+        m_root = m_nil;
+    }
+    ~Rbt() {
+        delete m_nil;
+    }
+public: // Interface
+    Node* search(int k);
+    Node* min(Node* x);
+    Node* max(Node* x);
+    Node* predecessor(Node* x);
+    Node* successor(Node* x);
+    void preorder(Node* x, std::function<void(Node*)> action);
+    void inorder(Node* x, std::function<void(Node*)> action);
+    void postorder(Node* x, std::function<void(Node*)> action);
+
+    void insert(Node* z);
+    void erase(Node* z);
+public: // getter
+    Node* nil() { return m_nil; }
+    Node* root() { return m_root; }
+private: // Support Functions
+    void insertFixup(Node* z);
+    void eraseFixup(Node* z);
+
+    bool isNull(Node* x){ return x == m_nil; }
+
+    void linkLeftChild(Node* parent, Node* child){
+        parent->left(child);
+        if(!isNull(child)){
+            child->parent(parent);
+        }
+    }
+    void linkRightChild(Node* parent, Node* child){
+        parent->right(child);
+        if(!isNull(child)){
+            child->parent(parent);
+        }
+    }
+    /**
+     * replace u position into v subtree
+    */
+    void replaceSubTree(Node* u, Node* v){
+        // Combine u.p with v
+        if(isNull(u->parent())){ // u is root
+            m_root = v;
+        } else if(u == u->parent()->left()){ // u is left subtree
+            u->parent()->left(v);
+        } else{ // u is right subtree
+            u->parent()->right(v);
+        }
+        // Combine v with u.p
+        v->parent(u->parent()); 
+    }
+
+    void leftRotate(Node* x){
+        if(isNull(x) || isNull(x->right())) { // Can not rotate
+            throw std::runtime_error("There are not nodes to left-rotate");
+        }
+        Node* y = x->right();
+
+        linkRightChild(x, y->left());   // X.right = Y.left
+        y->parent(x->parent());         // Y.parent = X.parent
+        if(isNull(x->parent())){
+            m_root = y;
+        } else if(x->parent()->left() == x){
+            x->parent()->left(y);
+        } else{
+            x->parent()->right(y);
+        }
+        linkLeftChild(y, x);            // Y.left = X
+    }
+    void rightRotate(Node* x){
+        if(isNull(x) || isNull(x->left())) { // Can not rotate
+            throw std::runtime_error("There are not nodes to right-rotate");
+        }
+        Node* y = x->left();
+
+        linkLeftChild(x, y->right());   // X.left = Y.right
+        y->parent(x->parent());         // Y.parent = X.parent
+        if(isNull(x->parent())){
+            m_root = y;
+        } else if(x->parent()->left() == x){
+            x->parent()->left(y);
+        } else{
+            x->parent()->right(y);
+        }
+        linkRightChild(y, x);            // Y.right = X
+    }
+private: // Data
+    Node* m_nil;
+    Node* m_root;
+};
+
+// ================
+// =====query======
+// ================
+
+auto Rbt::search(int k) -> Node* {
+    Node* x = m_root;
+    while(!isNull(x) && x->key() != k){
+        if(k < x->key()){
+            x = x->left();
+        } else{
+            x = x->right();
+        }
+    }
+    return x;
 }
-void inorder(RbtNode* tree, const std::function<void(RbtNode*)>& action) {
-    if (tree == 0) return;
-    inorder(tree->left, action);
-    action(tree);
-    inorder(tree->right, action);
-}
-void postorder(RbtNode* tree, const std::function<void(RbtNode*)>& action) {
-    if (tree == 0) return;
-    postorder(tree->left, action);
-    postorder(tree->right, action);
-    action(tree);
-}
 
-RbtNode* search(RbtNode* tree, int key) {
-    while (tree != nullptr && tree->key != key) {
-        if (key < tree->key)
-            tree = tree->left;
-        else
-            tree = tree->right;
+auto Rbt::min(Node* x) -> Node* {
+    if(isNull(x)) return x;
+    while(!isNull(x->left())){
+        x = x->left();
     }
-    return tree;
+    return x;
+}
+auto Rbt::max(Node* x) -> Node* {
+    if(isNull(x)) return x;
+    while(!isNull(x->right())){
+        x = x->right();
+    }
+    return x;
 }
 
-RbtNode* min(RbtNode* tree) {
-    while (tree->left) {
-        tree = tree->left;
-    }
-    return tree;
+auto Rbt::predecessor(Node* x) -> Node* {
+    if(isNull(x)) return x;
+    
+    if(isNull(x->left())){
+        Node* y = x->parent();
+        while(!isNull(y) && x == y->left()){
+            x = y;
+            y = y->parent();
+        }
+        return y;
+    } 
+    return max(x->left());
 }
-RbtNode* max(RbtNode* tree) {
-    while (tree->right) {
-        tree = tree->right;
-    }
-    return tree;
-}
-
-RbtNode* successor(RbtNode* tree) {
-    if (tree->right) {  // successor is in right subtree
-        return min(tree->right);
-    }
-    // successor is in ancestor
-    RbtNode* parent = tree->parent;
-    while (parent != nullptr && tree != parent->left) {
-        tree = parent;
-        parent = parent->parent;
-    }
-    return parent;
-}
-RbtNode* predecessor(RbtNode* tree) {
-    if (tree->left) {  // predecessor is in left subtree
-        return max(tree->left);
-    }
-    // predecessor is in ancestor
-    RbtNode* parent = tree->parent;
-    while (parent != nullptr && tree != parent->right) {
-        tree = parent;
-        parent = parent->parent;
-    }
-    return parent;
+auto Rbt::successor(Node* x) -> Node* {
+    if(isNull(x)) return x;
+    
+    if(isNull(x->right())){
+        Node* y = x->parent();
+        while(!isNull(y) && x == y->right()){
+            x = y;
+            y = y->parent();
+        }
+        return y;
+    } 
+    return min(x->right());
 }
 
-// ===================
-// ===Insert/Delete===
-// ===================
-
-inline int getColor(RbtNode* node) {
-    return node == 0 ? RbtNode::BLACK : node->color;
+void Rbt::preorder(Node* x, std::function<void(Node*)> action){
+    if(isNull(x)) return;
+    action(x);
+    preorder(x->left(), action);
+    preorder(x->right(), action);
 }
-inline int isBlack(RbtNode* node) { return getColor(node) == RbtNode::BLACK; }
-inline int isRed(RbtNode* node) { return getColor(node) == RbtNode::RED; }
-
-RbtNode* leftRotate(RbtNode* node) {
-    if (node == 0 || node->right == 0) {
-        return node;
-    }
-    RbtNode *x = node->right, *y = node, *z = node->parent;
-
-    y->parent = x;
-    y->right = x->left;
-    if (x->left) x->left->parent = y;
-
-    x->parent = z;
-    x->left = y;
-
-    if (z) {
-        if (y == z->left)
-            z->left = x;
-        else
-            z->right = x;
-    }
-    return y;
+void Rbt::inorder(Node* x, std::function<void(Node*)> action){
+    if(isNull(x)) return;
+    inorder(x->left(), action);
+    action(x);
+    inorder(x->right(), action);
 }
-RbtNode* rightRotate(RbtNode* node) {
-    if (node == 0 || node->left == 0) {
-        return node;
-    }
-    RbtNode *x = node->left, *y = node, *z = node->parent;
-
-    y->parent = x;
-    y->left = x->right;
-    if (x->right) x->right->parent = y;
-
-    x->right = y;
-    x->parent = z;
-
-    if (z) {
-        if (y == z->left)
-            z->left = x;
-        else
-            z->right = x;
-    }
-    return y;
+void Rbt::postorder(Node* x, std::function<void(Node*)> action){
+    if(isNull(x)) return;
+    postorder(x->left(), action);
+    postorder(x->right(), action);
+    action(x);
 }
 
-RbtNode* simpleInsert(RbtNode* tree, RbtNode* target) {
-    if(tree == 0){
-        return target;
-    }
-    int key = target->key;
-    RbtNode* cursor = tree;
+// ================
+// =====insert=====
+// ================
 
-    while (cursor != nullptr && tree->key != key) {
-        if (key < cursor->key) {
-            if (cursor->left) {
-                cursor = cursor->left;
-            } else {
-                cursor->left = target;
-                target->parent = cursor;
-                break;
-            }
-        } else {
-            if (cursor->right) {
-                cursor = cursor->right;
-            } else {
-                cursor->right = target;
-                target->parent = cursor;
-                break;
-            }
+void Rbt::insert(Node* z){
+    Node* y = this->m_nil;
+    Node* x = this->m_root;
+    while(!isNull(x)){ // Find insert position
+        y = x;
+        if(z->key() < x->key()){
+            x = x->left();
+        } else{
+            x = x->right();
         }
     }
 
-    return tree;
-}
-
-RbtNode* insertNode(RbtNode* tree, RbtNode* target) {
-    tree = simpleInsert(tree, target);
-    target->color = target->parent ? RbtNode::RED : RbtNode::BLACK;
-
-    // Rebalance
-    while (target->parent != 0 && isRed(target->parent)) {
-        RbtNode* parent = target->parent;
-        RbtNode* grandParent = parent->parent;
-        RbtNode* uncle = 0;
-
-        if (parent == grandParent->left) {
-            uncle = grandParent->right;
-            if (isRed(uncle)) {
-                // propagation
-                grandParent->color = RbtNode::RED;
-                parent->color = uncle->color = RbtNode::BLACK;
-
-                target = grandParent;
-            } else {
-                if (target == parent->right) {  // left-rotate
-                    leftRotate(parent);
-                    std::swap(target, parent);
-                }
-                // right-rotate
-                rightRotate(grandParent);
-                parent->color = RbtNode::BLACK;
-                grandParent->color = RbtNode::RED;
-                if (parent->parent == 0) {
-                    tree = parent;
-                }
-            }
-        } else {
-            uncle = grandParent->left;
-            if (isRed(uncle)) {
-                // propagation
-                grandParent->color = RbtNode::RED;
-                parent->color = uncle->color = RbtNode::BLACK;
-
-                target = grandParent;
-            } else {
-                if (target == parent->left) {  // right-rotate
-                    rightRotate(parent);
-                    std::swap(target, parent);
-                }
-                // left-rotate
-                leftRotate(grandParent);
-                parent->color = RbtNode::BLACK;
-                grandParent->color = RbtNode::RED;
-                if (parent->parent == 0) {
-                    tree = parent;
-                }
-            }
-        }
+    z->parent(y);   // Insert Z
+    if(isNull(y)){
+        m_root = z;
+    } else if(z->key() < y->key()){
+        y->left(z);
+    } else{
+        y->right(z);
     }
-    tree->color = RbtNode::BLACK;
-    return tree;
+    z->left(m_nil);
+    z->right(m_nil);
+    z->color(EColor::RED);
+    
+    insertFixup(z); // Fixup color
 }
 
-RbtNode* deleteFixup(RbtNode* tree, RbtNode* target) {
-    while (target->parent != 0 && isBlack(target)) {
-        RbtNode* parent = target->parent;
-        if (target == parent->left) {
-            RbtNode* sibling = parent->right;
-            if (isRed(sibling)) { // Ensure sibling is Black
-                parent->color = RbtNode::RED;
-                sibling->color = RbtNode::BLACK;
+void Rbt::insertFixup(Node* z){
+    while(z->parent()->color() == EColor::RED){
+        if(z->parent() == z->parent()->parent()->left()){ // Left Case
+            Node* y = z->parent()->parent()->right(); // uncle
 
-                RbtNode* node = leftRotate(parent);
-                if(node->parent == 0) {
-                    tree = node;
-                }
-                sibling = parent->right;
-            } 
-            if(isBlack(sibling->left) && isBlack(sibling->right)){
-                sibling->color = RbtNode::RED;
-                target = parent;
+            if(y->color() == EColor::RED){      // Case.1: Propagation
+                y->color(EColor::BLACK);
+                z->parent()->color(EColor::BLACK);
+                z->parent()->parent()->color(EColor::RED);
+                z = z->parent()->parent();
                 continue;
-            } 
-
-            if(isBlack(sibling->right)){ // Ensure sibling's right is Red
-                sibling->color = RbtNode::RED;
-                sibling->right->color = RbtNode::BLACK;
-                sibling = rightRotate(sibling);
-            } 
-            sibling->color = parent->color;
-            parent->color = RbtNode::BLACK;
-            sibling->right->color = RbtNode::BLACK;
-            parent = leftRotate(parent);
-            if(parent->parent == 0){
-                tree = parent;
             }
-            break;
-        } else {
-            RbtNode* sibling = parent->left;
-            if (isRed(sibling)) { // Ensure sibling is Black
-                parent->color = RbtNode::RED;
-                sibling->color = RbtNode::BLACK;
 
-                RbtNode* node = rightRotate(parent);
-                if(node->parent == 0) {
-                    tree = node;
-                }
-                sibling = parent->left;
-            } 
-            if(isBlack(sibling->right) && isBlack(sibling->left)){
-                sibling->color = RbtNode::RED;
-                target = parent;
+            if(z == z->parent()->right()){      // Case.2: Resolve Zig-Zag
+                z = z->parent();
+                leftRotate(z);
+            }
+            z->parent()->color(EColor::BLACK);  // Case.3
+            z->parent()->parent()->color(EColor::RED);
+            rightRotate(z->parent()->parent());
+        } else{ // Right Case
+            Node* y = z->parent()->parent()->left();
+
+            if(y->color() == EColor::RED){      // Case.1: Propagation
+                y->color(EColor::BLACK);
+                z->parent()->color(EColor::BLACK);
+                z->parent()->parent()->color(EColor::RED);
+                z = z->parent()->parent();
                 continue;
-            } 
-
-            if(isBlack(sibling->left)){ // Ensure sibling's left is Red
-                sibling->color = RbtNode::RED;
-                sibling->left->color = RbtNode::BLACK;
-                sibling = leftRotate(sibling);
-            } 
-            sibling->color = parent->color;
-            parent->color = RbtNode::BLACK;
-            sibling->left->color = RbtNode::BLACK;
-            parent = rightRotate(parent);
-            if(parent->parent == 0){
-                tree = parent;
             }
-            break;
+
+            if(z == z->parent()->left()){       // Case.2: Resolve Zig-Zag
+                z = z->parent();
+                rightRotate(z);
+            }
+            z->parent()->color(EColor::BLACK);  // Case.3
+            z->parent()->parent()->color(EColor::RED);
+            leftRotate(z->parent()->parent());
         }
     }
-    target->color = RbtNode::BLACK;
-    return tree;
+
+    m_root->color(EColor::BLACK);   // Root is always Black
 }
 
-RbtNode* deleteNode(RbtNode* tree, RbtNode* target) {
-    RbtNode* victim = 0;  // Find real deleted target
-    if (target->left == 0 || target->right == 0) {
-        victim = target;
-    } else {
-        victim = successor(target);
-    }
-    target->key = victim->key;
+// ================
+// =====erase======
+// ================
 
-    RbtNode* subTree = 0;  // Join sub-tree after deleted
-    if (victim->left) {
-        subTree = victim->left;
-    } else if (victim->right) {
-        subTree = victim->right;
-    }
+void Rbt::erase(Node* z){
+    Node* y = z;    // Deleted position
+    Node* x = 0;    // Joined node
+    EColor origin = y->color();
 
-    if (subTree) {
-        subTree->parent = victim->parent;
-    }
-    if (victim->parent == 0) {
-        tree = subTree;
-    } else if (victim == victim->parent->left) {
-        victim->parent->left = subTree;
-    } else {
-        victim->parent->right = subTree;
-    }
+    if(isNull(z->left())){          // Join right child
+        x = z->right();
+        replaceSubTree(y, x);
+    } else if(isNull(z->right())){  // Join left child
+        x = z->left();
+        replaceSubTree(y, x);
+    } else{ 
+        y = min(z->right()); // successor
+        origin = y->color();
+        x = y->right();
 
-    if (victim->color == RbtNode::BLACK) {
-        tree = deleteFixup(tree, subTree);
+        if(y->parent() == z){   // y is right child
+            x->parent(y);
+        } else{                 // y is left child
+            replaceSubTree(y, x);
+            y->right(z->right());
+            y->right()->parent(y);
+        }
+        replaceSubTree(z, y);
+        y->left(z->left());
+        y->left()->parent(y);
+        y->color(z->color());
     }
-    delete victim;
-    return tree;
+    if(origin == EColor::BLACK){ // Fixup (Black node is deleted)
+        eraseFixup(x);
+    }
+    delete z;
+}
+
+void Rbt::eraseFixup(Node* x){
+    while(x != m_root && x->color() == EColor::BLACK){
+        if(x == x->parent()->left()){ // Left Case
+            Node* w = x->parent()->right(); // uncle
+
+            if(w->color() == EColor::RED){ // Case.1: left-rotate
+                w->color(EColor::BLACK);
+                x->parent()->color(EColor::RED);
+                leftRotate(x->parent());
+                w = x->parent()->right();
+            }
+            if(w->left()->color() == EColor::BLACK && w->right()->color() == EColor::BLACK){ // Case.2: draw black child
+                w->color(EColor::RED);
+                x = x->parent();
+            } else {
+                if(w->right()->color() == EColor::BLACK){ // Case.3: right-rotate
+                    w->left()->color(EColor::BLACK);
+                    w->color(EColor::RED);
+                    rightRotate(w);
+                    w = x->parent()->right();
+                }
+                w->color(x->parent()->color()); // Case.4: left-rotate
+                x->parent()->color(EColor::BLACK);
+                w->right()->color(EColor::BLACK);
+                leftRotate(x->parent());
+                x = m_root;
+            }
+        } else{
+            Node* w = x->parent()->left(); // uncle
+
+            if(w->color() == EColor::RED){ // Case.1: right-rotate
+                w->color(EColor::BLACK);
+                x->parent()->color(EColor::RED);
+                rightRotate(x->parent());
+                w = x->parent()->left();
+            }
+            if(w->right()->color() == EColor::BLACK && w->left()->color() == EColor::BLACK){ // Case.2: draw black child
+                w->color(EColor::RED);
+                x = x->parent();
+            } else {
+                if(w->left()->color() == EColor::BLACK){ // Case.3: left-rotate
+                    w->right()->color(EColor::BLACK);
+                    w->color(EColor::RED);
+                    leftRotate(w);
+                    w = x->parent()->left();
+                }
+                w->color(x->parent()->color()); // Case.4: right-rotate
+                x->parent()->color(EColor::BLACK);
+                w->left()->color(EColor::BLACK);
+                rightRotate(x->parent());
+                x = m_root;
+            }
+        }
+    }
+    x->color(EColor::BLACK); // drop black (when root) or coloring black (when red node)
+}
+
+int main(void){
+    std::ifstream fin("rbt.inp");
+    std::ofstream fout("rbt.out");
+    Rbt rbt;
+
+    char c;
+    int i;
+    while(fin >> c >> i){
+        if(i < 0) return 0;
+        switch(c){
+        case 'i':{
+            rbt.insert(new Rbt::Node(i));
+        } break;
+        case 'd':{
+            rbt.erase(rbt.search(i));
+        } break;
+        case 'c':{
+            Rbt::Node* result = rbt.search(i);
+            fout << "color(" << result->key() << "): " 
+                << (result->color() ? "RED" : "BLACK") << "\n";
+        } break;
+        }
+    }
+    fin.close();
+    fout.close();
+    return 0;
+    // Test Cases
+    const int TEST_MIN = 0;
+    const int TEST_MAX = 9;
+
+    // Empty Tree Query
+    assert(rbt.search((TEST_MAX + TEST_MIN) / 2) == rbt.nil());
+    assert(rbt.min(rbt.root()) == rbt.nil());
+    assert(rbt.max(rbt.root()) == rbt.nil());
+    assert(rbt.predecessor(rbt.root()) == rbt.nil());
+    assert(rbt.successor(rbt.root()) == rbt.nil());
+
+    // Insert
+    for(int i = TEST_MIN; i <= TEST_MAX; ++i){
+        rbt.insert(new Rbt::Node(i));
+    }
+    // Search
+    for(int i = TEST_MIN; i <= TEST_MAX; ++i){
+        assert(rbt.search(i) != rbt.nil());
+    }
+    assert(rbt.search(TEST_MIN - 1) == rbt.nil());
+    assert(rbt.search(TEST_MAX + 1) == rbt.nil());
+    // Min/Max
+    assert(rbt.min(rbt.root())->key() == TEST_MIN);
+    assert(rbt.max(rbt.root())->key() == TEST_MAX);
+    // Predecessor/Successor
+    Rbt::Node* cursor = 0;
+    cursor = rbt.search(TEST_MAX);
+    while(true){
+        Rbt::Node* prev = rbt.predecessor(cursor);
+        if(prev == rbt.nil()) {
+            break;
+        }
+        assert(cursor->key() - 1 == prev->key());
+        cursor = prev;
+    }
+    cursor = rbt.search(TEST_MIN);
+    while(true){
+        Rbt::Node* next = rbt.successor(cursor);
+        if(next == rbt.nil()) {
+            break;
+        }
+        assert(cursor->key() + 1 == next->key());
+        cursor = next;
+    }
+    std::cout << "[Traverse]\n";
+    std::cout << "Preorder\n";
+    rbt.preorder(rbt.root(), [](Rbt::Node* x) { std::cout << x->key() << "(" << (x->color() ? "R" : "B") << "), ";});
+    std::cout << "\nInorder\n";
+    rbt.inorder(rbt.root(), [](Rbt::Node* x) { std::cout << x->key() << "(" << (x->color() ? "R" : "B") << "), ";});
+    std::cout << "\nPostorder\n";
+    rbt.postorder(rbt.root(), [](Rbt::Node* x) { std::cout << x->key() << "(" << (x->color() ? "R" : "B") << "), ";});
+    std::cout << "\n\n";
+
+    for(int i = TEST_MIN; i <= TEST_MAX; ++i){
+        rbt.erase(rbt.search(i));
+        rbt.inorder(rbt.root(), [](Rbt::Node* x) { std::cout << x->key() << "(" << (x->color() ? "R" : "B") << "), ";});
+        std::cout << '\n';
+    }
 }
