@@ -37,3 +37,5 @@
 # Input/Output File
 *.inp
 *.out
+
+Test/*
