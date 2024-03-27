@@ -8,14 +8,15 @@
 // File Control
 #define READ_FROM_FILE
 
-const std::string FILE_NAME = "grid";
+const std::string ROOT = "C:\\Users\\User\\Documents\\Workspace_vscode\\Problem-Solving\\PSP\\";
+const std::string FILE_NAME = ROOT + "grid";
 const std::string INPUT_FORMAT = ".inp";
 const std::string OUTPUT_FORMAT = ".out";
 const std::string INPUT_FILE = FILE_NAME + INPUT_FORMAT;
 const std::string OUTPUT_FILE = FILE_NAME + OUTPUT_FORMAT;
 
 
-constexpr int MAX_SIZE = 1000;      // 격자의 최대 길이
+constexpr int MAX_SIZE = 1010;      // 격자의 최대 길이
 constexpr int MAX_THRESHOLD = 10;   // k의 최대값
 constexpr int MOD = 1000000007;
 
@@ -28,15 +29,14 @@ struct Node {
 
 int x, y, a, b, k;
 
-int addTo(int lhs, int rhs){
-    return (lhs % MOD + rhs % MOD) % MOD;
-}
+int addTo(int lhs, int rhs){ return ((lhs % MOD) + (rhs % MOD)) % MOD; }
 
 int solution(){
     // 초기화
     // 출발점
     if(grid[0][0].isFlag){
-        grid[0][0].counts[1] = 1; 
+        if(k == 0) grid[0][0].counts[0] = 1; 
+        else grid[0][0].counts[1] = 1; 
     } else if(grid[0][0].isBlock) {
         // set 0
     } else{
@@ -49,7 +49,7 @@ int solution(){
 
         if(!node.isBlock){
             std::memcpy(node.counts, left.counts, sizeof(int) * (k + 1));
-            if(node.isFlag){
+            if(node.isFlag && k > 0){
                 node.counts[k - 1] = addTo(node.counts[k - 1], node.counts[k]);
                 std::memmove(node.counts + 1, node.counts, sizeof(int) * k);
                 node.counts[0] = 0;
@@ -62,7 +62,7 @@ int solution(){
 
         if(!node.isBlock){
             std::memcpy(node.counts, bottom.counts, sizeof(int) * (k + 1));
-            if(node.isFlag){
+            if(node.isFlag && k > 0){
                 node.counts[k - 1] = addTo(node.counts[k - 1], node.counts[k]);
                 std::memmove(node.counts + 1, node.counts, sizeof(int) * k);
                 node.counts[0] = 0;
