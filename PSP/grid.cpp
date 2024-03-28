@@ -8,8 +8,7 @@
 // File Control
 #define READ_FROM_FILE
 
-const std::string ROOT = "C:\\Users\\User\\Documents\\Workspace_vscode\\Problem-Solving\\PSP\\";
-const std::string FILE_NAME = ROOT + "grid";
+const std::string FILE_NAME = "grid";
 const std::string INPUT_FORMAT = ".inp";
 const std::string OUTPUT_FORMAT = ".out";
 const std::string INPUT_FILE = FILE_NAME + INPUT_FORMAT;
@@ -83,7 +82,7 @@ int solution(){
                     node.counts[i] = addTo(node.counts[i], bottom.counts[i]);
                 }
 
-                if(node.isFlag){
+                if(node.isFlag && k > 0){
                     node.counts[k - 1] = addTo(node.counts[k - 1], node.counts[k]);
                     std::memmove(node.counts + 1, node.counts, sizeof(int) * k);
                     node.counts[0] = 0;
