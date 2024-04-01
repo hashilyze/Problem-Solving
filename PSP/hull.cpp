@@ -5,7 +5,6 @@
 #include <string>
 
 // === File Control ====
-#define ONLINE_JUDGE
 const std::string FILE_NAME = "hull";
 const std::string INPUT_FILE = FILE_NAME + ".inp";
 const std::string OUTPUT_FILE = FILE_NAME + ".out";
@@ -32,10 +31,9 @@ int direction(int p1, int p2, int p3){
     Vector2 v2 = points[p3] - points[p2];
     return v1.x * v2.y - v1.y * v2.x;
 }
-int dot(int p1, int p2, int p3){
+int sqrDist(int p1, int p2){
     Vector2 v1 = points[p2] - points[p1];
-    Vector2 v2 = points[p3] - points[p2];
-    return v1.x * v2.x + v1.y + v2.y;
+    return v1.x * v1.x + v1.y * v1.y;
 }
 
 void makeConvexHull(int start){
@@ -45,8 +43,13 @@ void makeConvexHull(int start){
         hull[m++] = prev;
         next = (prev + 1) % n;
         for(int i = 0; i < n; ++i){
-            if(direction(prev, next, i) < 0){
-                next = i;
+            if(i != prev && i != next){
+                if(direction(prev, next, i) < 0){
+                    next = i;
+                } else if(direction(prev, next, i) == 0
+                    && sqrDist(prev, i) > sqrDist(prev, next)){
+                    next = i;
+                }
             }
         }
         prev = next;
