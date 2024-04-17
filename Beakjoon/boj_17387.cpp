@@ -30,30 +30,29 @@ ll direction(const Vector2& p1, const Vector2& p2, const Vector2& p3){
     return 0;
 }
 
+bool isIntersect(Vector2 a, Vector2 b, Vector2 c, Vector2 d){
+    ll ret1 = direction(a, b, c) * direction(a, b, d);
+    ll ret2 = direction(c, d, a) * direction(c, d, b);
+
+    if(ret1 == 0 && ret2 == 0){
+        if(b <= a) std::swap(a, b);
+        if(d <= c) std::swap(c, d);
+        return a <= d && c <= b;
+    }
+    return ret1 <= 0 && ret2 <= 0;
+}
+
+
 int main(void){
     FASTIO
 
     Vector2 a, b, c, d;
-    std::cin >> a.x >> a.y >> b.x >> b.y
-        >> c.x >> c.y >> d.x >> d.y;
+    std::cin >> a.x >> a.y 
+        >> b.x >> b.y
+        >> c.x >> c.y 
+        >> d.x >> d.y;
     
-    ll ret1 = direction(a, b, c) * direction(a, b, d);
-    ll ret2 = direction(c, d, a) * direction(c, d, b);
-
-    if(ret1 <= 0 && ret2 <= 0){
-        if(ret1 == 0 && ret2 == 0){
-            if(b <= a) std::swap(a, b);
-            if(d <= c) std::swap(c, d);
-            if(a <= d && c <= b){
-                std::cout << 1 << '\n';
-                return 0;
-            }
-        } else{
-            std::cout << 1 << '\n';
-            return 0;
-        }
-    }
-    std::cout << 0 << '\n';
+    std::cout << (isIntersect(a, b, c, d) ? 1 : 0)<< '\n';
 
     return 0;
 }
