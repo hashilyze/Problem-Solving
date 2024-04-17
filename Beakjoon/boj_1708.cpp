@@ -1,77 +1,71 @@
-// Beakjoon 1708번 - 볼록 껍질
+// Beakjoon 1708 - 볼록 껍질
+// https://www.acmicpc.net/problem/1708
 
 #include <iostream>
+#include <vector>
+#include <algorithm>
 
-
-// === Solution ====
-// type
+// macros
+#define FASTIO std::ios_base::sync_with_stdio(false); std::cin.tie(NULL); std::cout.tie(NULL);
 using ll = long long;
-// class
+// types
 struct Vector2{
     Vector2() = default;
-    Vector2(int _x, int _y) : x(_x), y(_y) { }
-    Vector2 operator-(const Vector2& rhs) { return Vector2(this->x - rhs.x, this->y - rhs.y); }
+    Vector2(ll _x, ll _y) : x(_x), y(_y) { };
+    
+    bool operator<(const Vector2& rhs) const { return x != rhs.x ? x < rhs.x : y < rhs.y; }
+    Vector2 operator+(const Vector2& rhs) const { return { x + rhs.x , y + rhs.y }; }
+    Vector2 operator-(const Vector2& rhs) const { return { x - rhs.x , y - rhs.y }; }
 
-    int x, y;
+    ll x, y;
 };
 // constants
 constexpr int MAX_N = 100'000;
 // variables
-int n, m;
+int n;
 Vector2 points[MAX_N];
-int hull[MAX_N];
+int convex[MAX_N];
 
-int direction(int p1, int p2, int p3){
-    Vector2 v1 = points[p2] - points[p1];
-    Vector2 v2 = points[p3] - points[p2];
-    ll ret = (ll)v1.x * v2.y - (ll)v1.y * v2.x;
-    if(ret < 0) return -1;
-    else if(ret > 0) return 1;
-    else return 0;
-}
-ll sqrDist(int p1, int p2){
-    Vector2 v1 = points[p2] - points[p1];
-    return (ll)v1.x * v1.x + (ll)v1.y * v1.y;
-}
+inline ll cross(const Vector2& v, const Vector2& u) { return v.x * u.y - u.x * v.y; }
+inline ll cross(const Vector2& p1, const Vector2& p2, const Vector2& p3) { return cross(p2 - p1, p3 - p1); }
 
-void makeConvexHull(int start){
+inline ll sqrNorm(const Vector2& p) { return p.x * p.x + p.y * p.y; }
+inline ll sqrDist(const Vector2& p1, const Vector2& p2) { return sqrNorm(p2 - p1); }
+
+int getConvexHull(){
+    int start = std::min_element(points, points + n) - points;
     int prev = start;
     int next = -1;
+    
+    int k = 0;
     while(next != start){
-        hull[m++] = prev;
-        next = (prev + 1) % n;
-        for(int i = 0; i < n; ++i){
+        convex[k++] = prev;
+
+        next = prev != 0 ? 0 : 1;
+        for(int  i = 0; i < n; ++i){
             if(i != prev && i != next){
-                if(direction(prev, next, i) < 0){
-                    next = i;
-                } else if(direction(prev, next, i) == 0
-                    && sqrDist(prev, i) > sqrDist(prev, next)){
+                ll ccw = cross(points[prev], points[next], points[i]);
+                if(ccw < 0 || ccw == 0 && sqrDist(points[prev], points[next]) < sqrDist(points[prev], points[i])){
                     next = i;
                 }
             }
         }
         prev = next;
     }
+    return k;
 }
 
+
+
 int main(void){
-    std::istream& in = std::cin;
-    std::ostream& out = std::cout;
-
-    in >> n;
-    for(int i = 0; i < n; ++i) in >> points[i].x >> points[i].y;
-
-    int start = 0;
-    for(int i = 1; i < n; ++i){
-        if(points[i].x < points[start].x){
-            start = i;
-        } else if(points[i].x == points[start].x && points[i].y < points[start].y){
-            start = i;
-        }
-    }
-    makeConvexHull(start);
+    FASTIO
     
+    std::cin >> n;
+    for(int i = 0; i < n; ++i) std::cin >> points[i].x >> points[i].y;
 
-    out << m << '\n';
+    int k = getConvexHull();
+    std::cout << k << '\n';
+    for(int i = 0; i < k; ++i) std::cout << points[convex[i]].x << ' ' << points[convex[i]].y << '\n';
+
     return 0;
 }
