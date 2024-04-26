@@ -38,4 +38,7 @@
 *.inp
 *.out
 
+# Build File
+build
+
 Test/*
