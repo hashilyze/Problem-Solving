@@ -15,7 +15,7 @@ const std::string OUTPUT_FILE = FILE_NAME + ".out";
 // constants
 constexpr int MAX_N = 100;
 constexpr int MAX_P = 50;
-constexpr int MAX_SIZE = MAX_N * (2 * MAX_P + 1) + 2;
+constexpr int MAX_SIZE = MAX_N * (MAX_P + 1) + 2;
 
 constexpr int SOURCE = 0;
 constexpr int SINK = MAX_SIZE - 1;
@@ -67,9 +67,9 @@ int maxflow(int n, int s, int t){
 // team
 inline int team(int t) { return 1 + t; }
 // team, day
-inline int team(int t, int d) { return MAX_N * (1 + t) + d + 1; }
+//inline int team(int t, int d) { return MAX_N * (1 + t) + d + 1; }
 // location, day
-inline int location(int l, int d) { return MAX_N * (MAX_P + 1 + d) + l + 1; }
+inline int location(int l, int d) { return MAX_N * (1 + d) + l + 1; }
 
 int main(void){
 #ifndef ONLINE_JUDGE
@@ -104,8 +104,8 @@ int main(void){
             for(int i = 0; i < services[t]; ++i){
                 int d, l;
                 in >> d >> l;
-                rGraph[team(t, d - 1)][location(l - 1, d - 1)] = 1;
-                rGraph[team(t)][team(t, d - 1)] = 1;
+                rGraph[team(t)][location(l - 1, d - 1)] = 1;
+                //rGraph[team(t)][team(t, d - 1)] = 1;
             }
         }
         //out << maxflow(MAX_SIZE, SOURCE, SINK) << '\n';
