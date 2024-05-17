@@ -5,6 +5,7 @@
 #include <queue>
 #include <fstream>
 #include <string>
+#include <vector>
 
 // === File Control ====
 const std::string FILE_NAME = "service";
@@ -21,6 +22,7 @@ constexpr int SOURCE = 0;
 constexpr int SINK = MAX_SIZE - 1;
 // variables
 int n, p, m;
+std::vector<int> adj[MAX_SIZE];
 int rGraph[MAX_SIZE][MAX_SIZE];
 int parents[MAX_SIZE];
 
@@ -32,13 +34,13 @@ bool bfs(int n, int s, int t){
     std::memset(parents, 0xFF, sizeof(parents));
 
     std::queue<int> q;
-    q.push(s);
+    q.push(s); parents[s] = s;
 
     while(!q.empty()){
         int u = q.front(); q.pop();
 
-        for(int v = 0; v < n; ++v){
-            if((v != s && parents[v] == -1) && rGraph[u][v] > 0){
+        for(int v : adj[u]){
+            if(parents[v] == -1 && rGraph[u][v] > 0){
                 q.push(v);
                 parents[v] = u;
                 if(v == t) return true;
@@ -55,7 +57,7 @@ int maxflow(int n, int s, int t){
         mf += f;
 
         int v = t;
-        while(parents[v] != -1){
+        while(parents[v] != v){
             rGraph[parents[v]][v] -= f;
             rGraph[v][parents[v]] += f;
             v = parents[v];
@@ -66,8 +68,6 @@ int maxflow(int n, int s, int t){
 
 // team
 inline int team(int t) { return 1 + t; }
-// team, day
-//inline int team(int t, int d) { return MAX_N * (1 + t) + d + 1; }
 // location, day
 inline int location(int l, int d) { return MAX_N * (1 + d) + l + 1; }
 
@@ -81,14 +81,19 @@ int main(void){
     std::istream& in = std::cin;
     std::ostream& out = std::cout;
 #endif
-    
+
     int t;
     in >> t;
     while(t--){
         std::memset(rGraph, 0x00, sizeof(rGraph));
 
         in >> n >> p >> m;
-        for(int i = 0; i < n; ++i) rGraph[SOURCE][team(i)] = m;
+        for(int i = 0; i < n; ++i) {
+            rGraph[SOURCE][team(i)] = m;
+            
+            adj[SOURCE].push_back(team(i));
+            adj[team(i)].push_back(SOURCE);
+        }
 
         int sum = 0;
         for(int d = 0; d < p; ++d) {
@@ -96,6 +101,9 @@ int main(void){
             sum += locations[d];
             for(int l = 0; l < locations[d]; ++l){
                 rGraph[location(l, d)][SINK] = 1;
+                
+                adj[location(l, d)].push_back(SINK);
+                adj[SINK].push_back(location(l, d));
             }
         }
 
@@ -105,10 +113,11 @@ int main(void){
                 int d, l;
                 in >> d >> l;
                 rGraph[team(t)][location(l - 1, d - 1)] = 1;
-                //rGraph[team(t)][team(t, d - 1)] = 1;
+
+                adj[team(t)].push_back(location(l - 1, d - 1));
+                adj[location(l - 1, d - 1)].push_back(team(t));
             }
         }
-        //out << maxflow(MAX_SIZE, SOURCE, SINK) << '\n';
         if(maxflow(MAX_SIZE, SOURCE, SINK) == sum) out << "1\n";
         else out << "0\n";
     }
