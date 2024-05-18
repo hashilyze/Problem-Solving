@@ -16,7 +16,8 @@ const std::string OUTPUT_FILE = FILE_NAME + ".out";
 // constants
 constexpr int MAX_N = 100;
 constexpr int MAX_P = 50;
-constexpr int MAX_SIZE = MAX_N * (MAX_P + 1) + 2;
+constexpr int MAX_L = MAX_N * MAX_P;
+constexpr int MAX_SIZE = 2 + MAX_N + MAX_L;
 
 constexpr int SOURCE = 0;
 constexpr int SINK = MAX_SIZE - 1;
@@ -26,8 +27,7 @@ std::vector<int> adj[MAX_SIZE];
 int rGraph[MAX_SIZE][MAX_SIZE];
 int parents[MAX_SIZE];
 
-int locations[MAX_P];
-int services[MAX_N];
+int locations[MAX_P + 1];
 
 
 bool bfs(int n, int s, int t){
@@ -67,9 +67,7 @@ int maxflow(int n, int s, int t){
 }
 
 // team
-inline int team(int t) { return 1 + t; }
-// location, day
-inline int location(int l, int d) { return MAX_N * (1 + d) + l + 1; }
+inline int team(int teamNo) { return 1 + teamNo; }
 
 int main(void){
 #ifndef ONLINE_JUDGE
@@ -86,39 +84,47 @@ int main(void){
     in >> t;
     while(t--){
         std::memset(rGraph, 0x00, sizeof(rGraph));
+        for(int i = 0; i < MAX_SIZE; ++i) adj[i].clear();
 
         in >> n >> p >> m;
-        for(int i = 0; i < n; ++i) {
-            rGraph[SOURCE][team(i)] = m;
+        // Source - Team
+        for(int teamNo = 1; teamNo <= n; ++teamNo) {
+            rGraph[SOURCE][teamNo] = m;
             
-            adj[SOURCE].push_back(team(i));
-            adj[team(i)].push_back(SOURCE);
+            adj[SOURCE].push_back(teamNo);
+            adj[teamNo].push_back(SOURCE);
         }
+        // Location - Sink
+        for(int cycleNo = 1; cycleNo <= p; ++cycleNo) {
+            in >> locations[cycleNo];
+            locations[cycleNo] += locations[cycleNo - 1];
+        }
+        for(int locNo = 1; locNo <= locations[p]; ++locNo){
+            int nodeNo = locNo + MAX_N;
+            rGraph[nodeNo][SINK] = 1;
 
-        int sum = 0;
-        for(int d = 0; d < p; ++d) {
-            in >> locations[d];
-            sum += locations[d];
-            for(int l = 0; l < locations[d]; ++l){
-                rGraph[location(l, d)][SINK] = 1;
-                
-                adj[location(l, d)].push_back(SINK);
-                adj[SINK].push_back(location(l, d));
+            adj[nodeNo].push_back(SINK);
+            adj[SINK].push_back(nodeNo);
+        }
+        // Team - Location
+        for(int teamNo = 1; teamNo <= n; ++teamNo){ 
+            int service;
+            in >> service;
+
+            for(int i = 0; i < service; ++i){
+                int cycleNo, locNo;
+                in >> cycleNo >> locNo;
+                if(locNo > locations[cycleNo] - locations[cycleNo - 1]) continue;
+
+                int nodeNo = MAX_N + locations[cycleNo - 1] + locNo;
+                rGraph[teamNo][nodeNo] = 1;
+
+                adj[teamNo].push_back(nodeNo);
+                adj[nodeNo].push_back(teamNo);
             }
         }
-
-        for(int t = 0; t < n; ++t){
-            in >> services[t];
-            for(int i = 0; i < services[t]; ++i){
-                int d, l;
-                in >> d >> l;
-                rGraph[team(t)][location(l - 1, d - 1)] = 1;
-
-                adj[team(t)].push_back(location(l - 1, d - 1));
-                adj[location(l - 1, d - 1)].push_back(team(t));
-            }
-        }
-        if(maxflow(MAX_SIZE, SOURCE, SINK) == sum) out << "1\n";
+        //out << maxflow(MAX_SIZE, SOURCE, SINK) << '\n';
+        if(maxflow(MAX_SIZE, SOURCE, SINK) == locations[p]) out << "1\n";
         else out << "0\n";
     }
 
