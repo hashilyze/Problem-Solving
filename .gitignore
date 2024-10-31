@@ -41,5 +41,5 @@
 # Build File
 build
 
-Test/*
+Workspace/*
 .cache
