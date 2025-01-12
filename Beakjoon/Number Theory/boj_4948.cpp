@@ -11,6 +11,7 @@
 constexpr int SIZE = 123'456 * 2;
 // variables
 bool isPrimes[SIZE + 1];
+int rangeSum[SIZE + 1];
 
 
 void init(){
@@ -23,14 +24,17 @@ void init(){
             isPrimes[n] = false;
         }
     }
+
+    // 소수개수 누적합
+    std::memset(rangeSum, 0x00, sizeof(rangeSum));
+    for(int p = 2; p <= SIZE; ++p){
+        rangeSum[p] = rangeSum[p - 1] + (isPrimes[p] ? 1 : 0);
+    }
 }
 
 int solution(int n){
-    int cnt = 0;
-    for(int x = n + 1; x <= 2 * n; ++x){
-        if(isPrimes[x]) ++cnt;
-    }
-    return cnt;
+    // { p | n < p <= 2n }
+    return rangeSum[2 * n] - rangeSum[n];
 }
 
 int main(void){
