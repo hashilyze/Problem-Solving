@@ -1,6 +1,7 @@
 // Beakjoon 13909 - 창문 닫기
 // https://www.acmicpc.net/problem/13909
 
+#include <cmath>
 #include <iostream>
 
 // macros
@@ -13,12 +14,8 @@
 int main(void){
     FASTIO
 
-    int N;
-    std::cin >> N;
-
-    int ans = 0;
-    for(int i = 1; i * i <= N; ++i) ++ans;
-    std::cout << ans;
+    int N; std::cin >> N;
+    std::cout << (int)std::sqrt(N);
 
     return 0;
 }
